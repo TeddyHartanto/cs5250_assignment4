@@ -49,8 +49,45 @@ def FCFS_scheduling(process_list):
 #Input: process_list, time_quantum (Positive Integer)
 #Output_1 : Schedule list contains pairs of (time_stamp, proccess_id) indicating the time switching to that proccess_id
 #Output_2 : Average Waiting Time
-def RR_scheduling(process_list, time_quantum ):
-    return (["to be completed, scheduling process_list on round robin policy with time_quantum"], 0.0)
+def RR_scheduling(process_list, time_quantum):
+    '''
+    1. Keep track of curr_time and wait_time similar to FCFS
+    2. For each process
+        If can finish within time_quantum
+            Finish it
+        Else
+            Finish part of it
+        Update curr_time and wait_time
+    '''
+    num_process = len(process_list)
+    schedule = []
+    current_time = 0
+    waiting_time = 0
+    while(len(process_list) > 0):
+        process = process_list.pop(0)
+
+        if(current_time < process.arrive_time):
+            current_time = process.arrive_time
+        schedule.append((current_time,process.id))
+        waiting_time = waiting_time + (current_time - process.arrive_time)
+        current_time = current_time + min(time_quantum, process.burst_time)
+
+        if process.burst_time > time_quantum:
+            # Decide where to append the process. This is a bit more sophisticated than the 
+            # actual implementation because here the processes doesn't 'come in.'
+            # We have to specifically check the process entries
+            ioi = -1  # index of insertion
+            exec_time = 0
+            for i, o_process in enumerate(process_list):
+                if o_process.arrive_time > current_time + exec_time:
+                    ioi = i
+                    break
+                exec_time += min(time_quantum, o_process.burst_time)
+
+            process_list.insert(ioi, Process(process.id, current_time + exec_time, process.burst_time - time_quantum))
+
+    average_waiting_time = waiting_time/float(num_process)
+    return schedule, average_waiting_time
 
 def SRTF_scheduling(process_list):
     return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
