@@ -26,16 +26,24 @@ input_file = 'input.txt'
 
 class Process:
     last_scheduled_time = 0
-    def __init__(self, id, arrive_time, burst_time):
+
+    def __init__(self, id, arrive_time, burst_time, original_arrive_time=None):
         self.id = id
         self.arrive_time = arrive_time
+        self.original_arrive_time = arrive_time if original_arrive_time is None else original_arrive_time
         self.burst_time = burst_time
+
     #for printing purpose
     def __repr__(self):
         return ('[id %d : arrive_time %d,  burst_time %d]'%(self.id, self.arrive_time, self.burst_time))
 
     def __lt__(self, other):
-        return self.arrive_time < other.arrive_time
+        if self.arrive_time < other.arrive_time:
+            return True
+        elif self.arrive_time == other.arrive_time:
+            return self.original_arrive_time < other.original_arrive_time
+        else:
+            return False
 
 def FCFS_scheduling(process_list):
     #store the (switching time, proccess_id) pair
@@ -104,7 +112,6 @@ def SRTF_scheduling(process_list):
 
     curr = 0
     while(len(ready_queue) > 0 or curr < len(process_list)):  # while there's still processes to be executed or there's incoming processes
-        # Execute the first process in the queue (should be the shortest remaining time)
         try:
             process = heappop(ready_queue)[1]
         except IndexError:
@@ -113,16 +120,28 @@ def SRTF_scheduling(process_list):
             curr += 1
             continue
 
-        if (current_time < process.arrive_time):
+        if current_time < process.arrive_time:
             current_time = process.arrive_time
         schedule.append((current_time, process.id))
         waiting_time += (current_time - process.arrive_time)
-        current_time += process.burst_time
-
-        # After execution, check if new processes should go into the ready queue
-        while (curr < len(process_list) and process_list[curr].arrive_time <= current_time):
-            heappush(ready_queue, (process_list[curr].burst_time, process_list[curr]))  
+        should_preempt = False
+        while curr < len(process_list) and process_list[curr].arrive_time < current_time + process.burst_time:
+            new_process = process_list[curr]
+            heappush(ready_queue, (new_process.burst_time, new_process))
             curr += 1
+
+            elapsed_time = new_process.arrive_time - current_time
+            if new_process.burst_time < process.burst_time - elapsed_time:
+                updated_process = Process(process.id, current_time, process.burst_time - elapsed_time,
+                                          process.original_arrive_time)
+                heappush(ready_queue, (updated_process.burst_time, updated_process))
+                current_time += elapsed_time  # execute until the arrival of the next process
+                should_preempt = True
+                break
+
+        if not should_preempt:
+            current_time +=  process.burst_time
+
 
     average_waiting_time = waiting_time/float(len(process_list))
     return schedule, average_waiting_time
