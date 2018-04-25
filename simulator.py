@@ -63,16 +63,14 @@ def FCFS_scheduling(process_list):
 #Output_1 : Schedule list contains pairs of (time_stamp, proccess_id) indicating the time switching to that proccess_id
 #Output_2 : Average Waiting Time
 def RR_scheduling(process_list, time_quantum):
-    '''
-    RR_scheduling with an actual queue
-    '''
+    """RR_scheduling with an actual queue"""
     schedule = []
     current_time = 0
     waiting_time = 0
     ready_queue = deque()
 
     curr = 0
-    while(len(ready_queue) > 0 or curr < len(process_list)):  # while there's still processes to be executed or there's incoming processes
+    while len(ready_queue) > 0 or curr < len(process_list):  # while there's still processes to be executed or there's incoming processes
         # Execute the first process in the queue
         try:
             process = ready_queue.popleft()
@@ -82,14 +80,14 @@ def RR_scheduling(process_list, time_quantum):
             curr += 1
             continue
 
-        if (current_time < process.arrive_time):
+        if current_time < process.arrive_time:
             current_time = process.arrive_time
         schedule.append((current_time, process.id))
         waiting_time += (current_time - process.arrive_time)
         current_time += min(time_quantum, process.burst_time)
 
         # After execution, check if new processes should go into the ready queue
-        while (curr < len(process_list) and process_list[curr].arrive_time <= current_time):
+        while curr < len(process_list) and process_list[curr].arrive_time <= current_time:
             ready_queue.append(process_list[curr])
             curr += 1
 
@@ -102,16 +100,15 @@ def RR_scheduling(process_list, time_quantum):
     
 
 def SRTF_scheduling(process_list):
-    '''
-    SRTF with an actual queue (or, priority queue, to be more accurate)
-    '''
+    """SRTF with an actual queue (or, priority queue, to be more accurate)"""
     schedule = []
     current_time = 0
     waiting_time = 0
     ready_queue = []
 
     curr = 0
-    while(len(ready_queue) > 0 or curr < len(process_list)):  # while there's still processes to be executed or there's incoming processes
+    # while there's still processes to be executed or there's incoming processes
+    while len(ready_queue) > 0 or curr < len(process_list):
         try:
             process = heappop(ready_queue)[1]
         except IndexError:
@@ -126,10 +123,12 @@ def SRTF_scheduling(process_list):
         waiting_time += (current_time - process.arrive_time)
         should_preempt = False
         while curr < len(process_list) and process_list[curr].arrive_time < current_time + process.burst_time:
+            # Add incoming processes to the queue
             new_process = process_list[curr]
             heappush(ready_queue, (new_process.burst_time, new_process))
             curr += 1
 
+            # If the process has SRT, we should pre-empt
             elapsed_time = new_process.arrive_time - current_time
             if new_process.burst_time < process.burst_time - elapsed_time:
                 updated_process = Process(process.id, current_time, process.burst_time - elapsed_time,
@@ -139,9 +138,9 @@ def SRTF_scheduling(process_list):
                 should_preempt = True
                 break
 
+        # If there's no pre-emption, it means this process has SRT and it shall finish
         if not should_preempt:
-            current_time +=  process.burst_time
-
+            current_time += process.burst_time
 
     average_waiting_time = waiting_time/float(len(process_list))
     return schedule, average_waiting_time
