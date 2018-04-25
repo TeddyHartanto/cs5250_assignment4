@@ -76,15 +76,15 @@ def RR_scheduling(process_list, time_quantum):
             # Decide where to append the process. This is a bit more sophisticated than the 
             # actual implementation because here the processes doesn't 'come in.'
             # We have to specifically check the process entries
-            ioi = -1  # index of insertion
+            ioi = len(process_list)  # index of insertion
             exec_time = 0
             for i, o_process in enumerate(process_list):
-                if o_process.arrive_time > current_time + exec_time:
+                if o_process.arrive_time > current_time:
                     ioi = i
                     break
                 exec_time += min(time_quantum, o_process.burst_time)
 
-            process_list.insert(ioi, Process(process.id, current_time + exec_time, process.burst_time - time_quantum))
+            process_list.insert(ioi, Process(process.id, current_time, process.burst_time - time_quantum))
 
     average_waiting_time = waiting_time/float(num_process)
     return schedule, average_waiting_time
