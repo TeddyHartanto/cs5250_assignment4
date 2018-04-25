@@ -19,6 +19,7 @@ Revision 2:
     Thanks Lee Wei Ping for trying and pointing out the difficulty & ambiguity with future_prediction SRTF.
 '''
 import sys
+from collections import deque
 
 input_file = 'input.txt'
 
@@ -89,6 +90,44 @@ def RR_scheduling(process_list, time_quantum):
     average_waiting_time = waiting_time/float(num_process)
     return schedule, average_waiting_time
 
+def RR_scheduling2(process_list, time_quantum):
+    '''
+    RR_scheduling with an actual queue
+    '''
+    schedule = []
+    current_time = 0
+    waiting_time = 0
+    ready_queue = deque() # First process should be inside the ready queue
+
+    curr = 0
+    while(len(ready_queue) > 0 or curr < len(process_list)):  # while there's still processes to be executed or there's incoming processes
+        # Execute the first process in the queue
+        try:
+            process = ready_queue.popleft()
+        except IndexError:
+            # Means ready_queue is empty but there are incoming processes
+            ready_queue.append(process_list[curr])
+            curr += 1
+            continue
+
+        if (current_time < process.arrive_time):
+            current_time = process.arrive_time
+        schedule.append((current_time, process.id))
+        waiting_time += (current_time - process.arrive_time)
+        current_time += min(time_quantum, process.burst_time)
+
+        # After execution, check if new processes should go into the ready queue
+        while (curr < len(process_list) and process_list[curr].arrive_time <= current_time):
+            ready_queue.append(process_list[curr])
+            curr += 1
+
+        if process.burst_time > time_quantum:
+            ready_queue.append(Process(process.id, current_time, process.burst_time - time_quantum))
+
+    average_waiting_time = waiting_time/float(len(process_list))
+    return schedule, average_waiting_time
+    
+
 def SRTF_scheduling(process_list):
     return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
 
@@ -122,7 +161,7 @@ def main(argv):
     FCFS_schedule, FCFS_avg_waiting_time =  FCFS_scheduling(process_list)
     write_output('FCFS.txt', FCFS_schedule, FCFS_avg_waiting_time )
     print ("simulating RR ----")
-    RR_schedule, RR_avg_waiting_time =  RR_scheduling(process_list,time_quantum = 2)
+    RR_schedule, RR_avg_waiting_time =  RR_scheduling2(process_list,time_quantum = 2)
     write_output('RR.txt', RR_schedule, RR_avg_waiting_time )
     print ("simulating SRTF ----")
     SRTF_schedule, SRTF_avg_waiting_time =  SRTF_scheduling(process_list)
