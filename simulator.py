@@ -134,10 +134,10 @@ def SRTF_scheduling(process_list):
             # If the process has SRT, we should pre-empt
             elapsed_time = new_process.arrive_time - current_time
             if new_process.burst_time < process.burst_time - elapsed_time:
+                current_time += elapsed_time  # execute this much
                 updated_process = Process(process.id, current_time, process.burst_time - elapsed_time,
                                           process.original_arrive_time)
                 heappush(ready_queue, (updated_process.burst_time, updated_process))
-                current_time += elapsed_time  # execute until the arrival of the next process
                 should_preempt = True
                 break
 
