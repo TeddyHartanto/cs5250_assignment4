@@ -155,13 +155,17 @@ def SJF_scheduling(process_list, alpha):
     ready_queue = []
 
     curr = 0
-    while len(ready_queue) > 0 or curr < len(process_list):  # while there's still processes to be executed or there's incoming processes
-        # Execute the first process in the queue (should be the shortest remaining time)
+    while len(ready_queue) > 0 or curr < len(process_list):
+        # Execute the first process in the queue (should be the shortest job)
         try:
-            process = heappop(ready_queue)[1]
+            curr_predicted_burst, process = heappop(ready_queue)
         except IndexError:
             # Means ready_queue is empty but there are incoming processes
-            heappush(ready_queue, (process_list[curr].burst_time, process_list[curr]))  # burst_time as priority
+            if curr == 0:
+                next_predicted_burst = 5
+            else:
+                next_predicted_burst = alpha * prev_actual_burst + (1 - alpha) * prev_predicted_burst
+            heappush(ready_queue, (next_predicted_burst, process_list[curr]))  # burst_time as priority
             curr += 1
             continue
 
@@ -171,9 +175,13 @@ def SJF_scheduling(process_list, alpha):
         waiting_time += (current_time - process.arrive_time)
         current_time += process.burst_time
 
+        prev_actual_burst = process.burst_time
+        prev_predicted_burst = curr_predicted_burst
+
         # After execution, check if new processes should go into the ready queue
         while curr < len(process_list) and process_list[curr].arrive_time <= current_time:
-            heappush(ready_queue, (process_list[curr].burst_time, process_list[curr]))
+            next_predicted_burst = alpha * prev_actual_burst + (1 - alpha) * prev_predicted_burst
+            heappush(ready_queue, (next_predicted_burst, process_list[curr]))
             curr += 1
 
     average_waiting_time = waiting_time / float(len(process_list))
