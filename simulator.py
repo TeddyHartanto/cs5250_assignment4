@@ -24,6 +24,7 @@ from heapq import *
 
 input_file = 'input.txt'
 
+
 class Process:
     last_scheduled_time = 0
 
@@ -35,7 +36,7 @@ class Process:
 
     #for printing purpose
     def __repr__(self):
-        return ('[id %d : arrive_time %d,  burst_time %d]'%(self.id, self.arrive_time, self.burst_time))
+        return '[id %d : arrive_time %d,  burst_time %d]' % (self.id, self.arrive_time, self.burst_time)
 
     def __lt__(self, other):
         if self.arrive_time < other.arrive_time:
@@ -51,11 +52,11 @@ def FCFS_scheduling(process_list):
     current_time = 0
     waiting_time = 0
     for process in process_list:
-        if(current_time < process.arrive_time):
+        if current_time < process.arrive_time:
             current_time = process.arrive_time
-        schedule.append((current_time,process.id))
-        waiting_time = waiting_time + (current_time - process.arrive_time)
-        current_time = current_time + process.burst_time
+        schedule.append((current_time, process.id))
+        waiting_time += (current_time - process.arrive_time)
+        current_time += process.burst_time
     average_waiting_time = waiting_time/float(len(process_list))
     return schedule, average_waiting_time
 
@@ -145,8 +146,38 @@ def SRTF_scheduling(process_list):
     average_waiting_time = waiting_time/float(len(process_list))
     return schedule, average_waiting_time
 
+
 def SJF_scheduling(process_list, alpha):
-    return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
+    """SJF with an actual queue (or, priority queue, to be more accurate)"""
+    schedule = []
+    current_time = 0
+    waiting_time = 0
+    ready_queue = []
+
+    curr = 0
+    while len(ready_queue) > 0 or curr < len(process_list):  # while there's still processes to be executed or there's incoming processes
+        # Execute the first process in the queue (should be the shortest remaining time)
+        try:
+            process = heappop(ready_queue)[1]
+        except IndexError:
+            # Means ready_queue is empty but there are incoming processes
+            heappush(ready_queue, (process_list[curr].burst_time, process_list[curr]))  # burst_time as priority
+            curr += 1
+            continue
+
+        if current_time < process.arrive_time:
+            current_time = process.arrive_time
+        schedule.append((current_time, process.id))
+        waiting_time += (current_time - process.arrive_time)
+        current_time += process.burst_time
+
+        # After execution, check if new processes should go into the ready queue
+        while curr < len(process_list) and process_list[curr].arrive_time <= current_time:
+            heappush(ready_queue, (process_list[curr].burst_time, process_list[curr]))
+            curr += 1
+
+    average_waiting_time = waiting_time / float(len(process_list))
+    return schedule, average_waiting_time
 
 
 def read_input():
@@ -154,16 +185,18 @@ def read_input():
     with open(input_file) as f:
         for line in f:
             array = line.split()
-            if (len(array)!= 3):
+            if len(array)!= 3:
                 print ("wrong input format")
                 exit()
-            result.append(Process(int(array[0]),int(array[1]),int(array[2])))
+            result.append(Process(int(array[0]), int(array[1]), int(array[2])))
     return result
+
+
 def write_output(file_name, schedule, avg_waiting_time):
-    with open(file_name,'w') as f:
+    with open(file_name, 'w') as f:
         for item in schedule:
             f.write(str(item) + '\n')
-        f.write('average waiting time %.2f \n'%(avg_waiting_time))
+        f.write('average waiting time %.2f \n' % avg_waiting_time)
 
 
 def main(argv):
@@ -172,16 +205,16 @@ def main(argv):
     for process in process_list:
         print (process)
     print ("simulating FCFS ----")
-    FCFS_schedule, FCFS_avg_waiting_time =  FCFS_scheduling(process_list)
+    FCFS_schedule, FCFS_avg_waiting_time = FCFS_scheduling(process_list)
     write_output('FCFS.txt', FCFS_schedule, FCFS_avg_waiting_time )
     print ("simulating RR ----")
-    RR_schedule, RR_avg_waiting_time =  RR_scheduling(process_list,time_quantum = 2)
+    RR_schedule, RR_avg_waiting_time = RR_scheduling(process_list, time_quantum=2)
     write_output('RR.txt', RR_schedule, RR_avg_waiting_time )
     print ("simulating SRTF ----")
-    SRTF_schedule, SRTF_avg_waiting_time =  SRTF_scheduling(process_list)
+    SRTF_schedule, SRTF_avg_waiting_time = SRTF_scheduling(process_list)
     write_output('SRTF.txt', SRTF_schedule, SRTF_avg_waiting_time )
     print ("simulating SJF ----")
-    SJF_schedule, SJF_avg_waiting_time =  SJF_scheduling(process_list, alpha = 0.5)
+    SJF_schedule, SJF_avg_waiting_time = SJF_scheduling(process_list, alpha=0.5)
     write_output('SJF.txt', SJF_schedule, SJF_avg_waiting_time )
 
 if __name__ == '__main__':
