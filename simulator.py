@@ -153,6 +153,7 @@ def SJF_scheduling(process_list, alpha):
     current_time = 0
     waiting_time = 0
     ready_queue = []
+    prev_burst_times = {}
 
     curr = 0
     while len(ready_queue) > 0 or curr < len(process_list):
@@ -161,10 +162,12 @@ def SJF_scheduling(process_list, alpha):
             curr_predicted_burst, process = heappop(ready_queue)
         except IndexError:
             # Means ready_queue is empty but there are incoming processes
-            if curr == 0:
-                next_predicted_burst = 5
-            else:
+            next_process = process_list[curr]
+            if prev_burst_times.get(next_process.id, False):
+                prev_actual_burst, prev_predicted_burst = prev_burst_times[next_process.id]
                 next_predicted_burst = alpha * prev_actual_burst + (1 - alpha) * prev_predicted_burst
+            else:
+                next_predicted_burst = 5
             heappush(ready_queue, (next_predicted_burst, process_list[curr]))  # burst_time as priority
             curr += 1
             continue
@@ -175,13 +178,17 @@ def SJF_scheduling(process_list, alpha):
         waiting_time += (current_time - process.arrive_time)
         current_time += process.burst_time
 
-        prev_actual_burst = process.burst_time
-        prev_predicted_burst = curr_predicted_burst
+        prev_burst_times[process.id] = (process.burst_time, curr_predicted_burst)
 
         # After execution, check if new processes should go into the ready queue
         while curr < len(process_list) and process_list[curr].arrive_time <= current_time:
-            next_predicted_burst = alpha * prev_actual_burst + (1 - alpha) * prev_predicted_burst
-            heappush(ready_queue, (next_predicted_burst, process_list[curr]))
+            next_process = process_list[curr]
+            if prev_burst_times.get(next_process.id, False):
+                prev_actual_burst, prev_predicted_burst = prev_burst_times[next_process.id]
+                next_predicted_burst = alpha * prev_actual_burst + (1 - alpha) * prev_predicted_burst
+            else:
+                next_predicted_burst = 5
+            heappush(ready_queue, (next_predicted_burst, process_list[curr]))  # burst_time as priority
             curr += 1
 
     average_waiting_time = waiting_time / float(len(process_list))
